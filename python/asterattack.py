@@ -5,7 +5,7 @@
 #|   \ |___  |   |  _|_/       |   | |___   
 
 # INSTRUCTIONS:
-# Codeskulptor framework and code available at http://www.codeskulptor.org/#user40_fv2fcgOdQBVyP0x_0.py
+# Codeskulptor framework and code available at http://www.codeskulptor.org/#user40_JZNWEOOPiACQFXU_3.py
 # 
 # (0. Google Chrome is recommended)
 # 1. Allow pop-ups
@@ -422,7 +422,7 @@ def KeyDown(key):
                         # can change direction without releasing key #1
                         # and continue in previous direction if key #1 is still pressed
                         # when key #2 is released
-    global instructs, music, state, shots
+    global music, state, shots
     
     if key == simplegui.KEY_MAP["left"]:
         my_ship.angle_vel = -acc
@@ -482,7 +482,7 @@ def KeyUp(key):
 
 # create draw handler
 def draw(canvas): 
-    global time, my_ship
+    global time
     
     # animate background
     time -= 1
@@ -534,13 +534,13 @@ def draw(canvas):
         canvas.draw_text("move    UP", [50, 298], 20, "White", "monospace")
         canvas.draw_text("reset   R", [50, 388], 20, "White", "monospace")
        
- 
-    
 def reset():
     global my_ship, score, Missiles, Rocks, level, music, debris_image, nebula_image, state, shots, accu
     
     state = 0
+    
     if music == True:
+        soundtrack.rewind()
         soundtrack.play()
         
     debs = random.choice([a, b, c, d, e, f, g]) # switch debris background
@@ -575,7 +575,7 @@ def reset():
     else:
         vel[0] = random.randint(5, 15) * -0.1
 
-            # Vertical Direction
+    # Vertical Direction
     if loc[1] < HEIGHT / 2:
         vel[1] = random.randint(5, 15) * 0.1
     else:
@@ -593,6 +593,7 @@ for x in tut:
 
 # initialize ship and two sprites
 reset ()
+
 # register handlers
 frame.set_draw_handler(draw)
 frame.set_keydown_handler(KeyDown)
@@ -600,4 +601,3 @@ frame.set_keyup_handler(KeyUp)
 
 # get things rolling
 frame.start()
-
