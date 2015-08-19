@@ -5,7 +5,7 @@
 #|   \ |___  |   |  _|_/       |   | |___   
 
 # INSTRUCTIONS:
-# Codeskulptor framework and code available at http://www.codeskulptor.org/#user40_JZNWEOOPiACQFXU_0.py
+# Codeskulptor framework and code available at http://www.codeskulptor.org/#user40_fv2fcgOdQBVyP0x_0.py
 # 
 # (0. Google Chrome is recommended)
 # 1. Allow pop-ups
@@ -484,8 +484,11 @@ def KeyUp(key):
 def draw(canvas): 
     global time, my_ship
     
-    # animiate background
+    # animate background
     time -= 1
+    
+    # ------------------PROVIDED CODE---------------------------------------------------------------
+
     wtime = (time / 4) % WIDTH
     center = debris_info.get_center()
     size = debris_info.get_size()
@@ -493,6 +496,8 @@ def draw(canvas):
     canvas.draw_image(debris_image, center, size, (wtime - WIDTH / 2, HEIGHT / 2), (WIDTH, HEIGHT))
     canvas.draw_image(debris_image, center, size, (wtime + WIDTH / 2, HEIGHT / 2), (WIDTH, HEIGHT))
     
+    # END ------------------PROVIDED CODE--------------------------------------------------------------- END
+
     my_ship.draw(canvas)
     if state > 0 and state < 4:
     # draw ship and sprites
@@ -535,9 +540,7 @@ def reset():
     global my_ship, score, Missiles, Rocks, level, music, debris_image, nebula_image, state, shots, accu
     
     state = 0
-    
     if music == True:
-        soundtrack.rewind()
         soundtrack.play()
         
     debs = random.choice([a, b, c, d, e, f, g]) # switch debris background
