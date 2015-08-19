@@ -5,7 +5,7 @@
 #|   \ |___  |   |  _|_/       |   | |___   
 
 # INSTRUCTIONS:
-# Codeskulptor framework and code available at http://www.codeskulptor.org/#user40_JZNWEOOPiACQFXU_3.py
+# Codeskulptor framework and code available at http://www.codeskulptor.org/#user40_cbnoC4i54tF3l6R_0.py
 # 
 # (0. Google Chrome is recommended)
 # 1. Allow pop-ups
@@ -29,7 +29,7 @@
 
 # All images and sounds property of their respective owners
 
-# need to do:
+# In Asteroid Attack 2 (soon TM):
 # doubleshot powerup
 # freeze rocks powerup (color change?)
 # invicibility powerup (touch damage?)
@@ -44,13 +44,12 @@ import random
 
 # globals for user interface
 WIDTH = 800
-HEIGHT =600
+HEIGHT = 600
 score = 0.0
 accu = 0.00
 hi = 0
 hi_acc = 0
 shots = 0
-perc = 100
 level = 1
 time = 0
 
