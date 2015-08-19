@@ -1,11 +1,11 @@
 # ___   ___   ___   ___               ___  
-#|   | |     |   |   | |       |\ /| |     
+#|   | |     |   |   | \       |\ /| |     
 #|-+-  |-+-  |-+-|   + |       | + | |-+-  
 #|  \  |     |   |   | |       |   | |     
-#       ---         ---               ---   
+#|   \ |___  |   |  _|_/       |   | |___   
 
 # INSTRUCTIONS:
-# Codeskulptor framework and code available at http://www.codeskulptor.org/#user40_TGt1c1W5umFWW14_0.py
+# Codeskulptor framework and code available at http://www.codeskulptor.org/#user40_JZNWEOOPiACQFXU_0.py
 # 
 # (0. Google Chrome is recommended)
 # 1. Allow pop-ups
@@ -13,15 +13,16 @@
 # 3. Maximize the new window
 # 4. Controls explained on left-hand side of window. 
 # 5. Enjoy!
-# 6. If sound effects (explosion, thrust, and missile) do not work, please alert me! 
+# 6. If sound effects (explosion, thrust, and missile) do not work, please alert me!
+# 7. To turn off music after closing popup, hit the back-arrow on top left of CodeSkulptor.
 
 # DISCLAIMERS
 # Justin Fan
 # Asteroid Attack
 
 # extension of Rice University Python course's RiceRocks concept
-# original concept by Scott Rixner et. al. of Rice University 
-# 	(their code is marked with --PROVIDED CODE--)
+# original template by Scott Rixner et. al. of Rice University 
+#   (their code is marked with --PROVIDED CODE--)
 
 # Asteroid/environment particle art assets created by Kim Lathrop 
 # may be freely re-used in non-commercial projects, please credit Kim
@@ -44,8 +45,12 @@ import random
 # globals for user interface
 WIDTH = 800
 HEIGHT =600
-score = 0
+score = 0.0
+accu = 0.00
 hi = 0
+hi_acc = 0
+shots = 0
+perc = 100
 level = 1
 time = 0
 
@@ -64,7 +69,7 @@ slow = 25
 
 title = "ASTEROID ATTACK"
 hi_score = "high score: " + str(hi)
-instructs = "Don't let a single asteroid pass!"
+instructs = "No rock shall pass!"
 msg = "GAME OVER"
 
 # ------------------PROVIDED CODE---------------------------------------------------------------
@@ -150,11 +155,8 @@ missile_sound = simplegui.load_sound("http://f.starfox-online.net/sf64/sfx/arwin
 def dist(p,q):
     return math.sqrt((p[0] - q[0]) ** 2 + (p[1] - q[1]) ** 2)
 
-# END ------------------PROVIDED CODE--------------------------------------------------------------- END
-
 # Ship class
 class Ship:
-    # ------------------PROVIDED CODE---------------------------------------------------------------
     def __init__(self, pos, vel, angle, image, info):
         self.pos = [pos[0],pos[1]]
         self.vel = [vel[0],vel[1]]
@@ -166,7 +168,7 @@ class Ship:
         self.image_size = info.get_size()
         self.radius = info.get_radius()
         
-    # END ------------------PROVIDED CODE--------------------------------------------------------------- END
+# END ------------------PROVIDED CODE--------------------------------------------------------------- END
         
         self.alive = True
         self.pos_2 = [pos[0] - 45, pos[1] - 45]
@@ -211,7 +213,7 @@ class Ship:
         
         # can't shoot while dead!
         if self.alive == True:
-            global missile_sound
+            global missile_sound, hi, hi_acc, accu
             
             # allows new missiles to make sound on spawn
             missile_sound.set_volume(1)
@@ -280,7 +282,7 @@ class Sprite:
         canvas.draw_image(self.image, self.image_center, self.image_size, self.pos, self.image_size, self.angle)
     
     def update(self):
-        global a_rock, score, msg, instructs, level, Rocks, persist, slow, state, hi, nebula_image
+        global score, accu, level, Rocks, persist, slow, state, hi, hi_acc, nebula_image
         
         # recalculate distance to ship
         self.dist = dist(self.pos, my_ship.pos_2)
@@ -297,6 +299,7 @@ class Sprite:
                     self.miss_dist = dist(self.pos, n.pos)
 
                     if self.miss_dist < self.radius: # it's a hit!
+                        score += 1
                         explosion_sound.rewind()
                         explosion_sound.play()
                        
@@ -308,17 +311,13 @@ class Sprite:
                         n.vel[0] = n.vel[0] / slow
                         n.vel[1] = n.vel[1] / slow
                         n.angle_vel = 0
-
-                        score += 1
-                        if score > hi:
-                            hi = score
                         
                         # remove rock immediately so that it doesn't eat extra shots
                         Rocks.items.remove(self) 
                         
                         if len(Rocks) == 0: # no rocks left on screen
                             level += 1
-                            nebula_image = simplegui.load_image(order[(level - 1) / 4])
+                            nebula_image = simplegui.load_image(order[(level - 1) % 24 / 4])
                             # if slow > 1.33: # for powerups in a later build
                                 # slow *= .75
                             for z in range(0, level / 2): # number of rocks in next level
@@ -326,7 +325,7 @@ class Sprite:
                                 # spawn all rocks a set distance offscreen in random location
                                 y = random.randint(-45, HEIGHT + 46)
                                 x = random.randint(-45, WIDTH + 46)
-                                loc = random.choice([[-45, y], [WIDTH + 45, y], [x, -45], [x, HEIGHT + 45]])
+                                loc = random.choice([[-90, y], [WIDTH + 90, y], [x, -90], [x, HEIGHT + 90]])
                                 vel = [0, 0] # initialize velocity list
  
                                 # Spin
@@ -362,6 +361,17 @@ class Sprite:
    
                 state = 2
                 soundtrack.pause()
+        
+        if shots == 0:
+            accu = 0.00;
+        else:
+            accu = score * 10000.0 // shots / 100.00
+        if score > hi:
+            hi = score
+            hi_acc = accu
+        elif score == hi:
+            if hi_acc < accu:
+                hi_acc = accu
         
         # updates object position
         self.angle += self.angle_vel
@@ -408,11 +418,11 @@ def SpawnPowerup(): # later build
 
 # create keypress handler
 def KeyDown(key):
-    global left, right 	# keeps track of keys to process conflicting presses. 
+    global left, right  # keeps track of keys to process conflicting presses. 
                         # can change direction without releasing key #1
                         # and continue in previous direction if key #1 is still pressed
                         # when key #2 is released
-    global instructs, music, state
+    global instructs, music, state, shots
     
     if key == simplegui.KEY_MAP["left"]:
         my_ship.angle_vel = -acc
@@ -428,12 +438,19 @@ def KeyDown(key):
     elif key == simplegui.KEY_MAP["space"]:
         if state == 0:
             state = 1
-        else:
+        elif state == 1:
+            shots += 1
             my_ship.shoot()
         
     elif key == simplegui.KEY_MAP["r"]:
         reset()
-        
+    
+    elif key == simplegui.KEY_MAP["p"]:
+        if state == 1:
+            state = 3
+        elif state == 3:
+            state = 1
+       
     elif key == simplegui.KEY_MAP["m"]:
         if music == True:
             soundtrack.set_volume(0) # mute music
@@ -468,7 +485,7 @@ def draw(canvas):
     global time, my_ship
     
     # animiate background
-    time += 1
+    time -= 1
     wtime = (time / 4) % WIDTH
     center = debris_info.get_center()
     size = debris_info.get_size()
@@ -477,31 +494,45 @@ def draw(canvas):
     canvas.draw_image(debris_image, center, size, (wtime + WIDTH / 2, HEIGHT / 2), (WIDTH, HEIGHT))
     
     my_ship.draw(canvas)
-    if state == 1 or state == 2:
+    if state > 0 and state < 4:
     # draw ship and sprites
         Rocks.draw(canvas) # custom draw method will iterate through list of asteroids
         Missiles.draw(canvas) # same for projectiles
-
-        # update ship and sprites
-        Rocks.update()
-        Missiles.update()
-        my_ship.update()
+        
+        if not state == 3:
+            # update ship and sprites
+            Rocks.update()
+            Missiles.update()
+            my_ship.update()
+            
+        else:
+            canvas.draw_text("PAUSED", [HEIGHT / 2 - 105, 200], 100, "White", "sans-serif")
         
         # HUD updates
-        canvas.draw_text("level " + str(level), [50, HEIGHT - 50], 40, "White", "sans-serif")
-        canvas.draw_text(str(score), [50, 80], 40, "White", "sans-serif")
+        canvas.draw_text("level " + str(level), [50, 80], 40, "White", "sans-serif")
+        canvas.draw_text(str(int(score)), [50, HEIGHT - 90], 40, "White", "sans-serif")
+        canvas.draw_text(str(accu) + "%", [50, HEIGHT - 50], 40, "White", "sans-serif") 
         
         if state == 2:
             canvas.draw_text(msg, [HEIGHT / 2 - 200, 300], 100, "White", "sans-serif")
-    
+        
     elif state == 0:
-        canvas.draw_text(title, [WIDTH / 2 - 230, 150], 50, "White", "sans-serif")
-        canvas.draw_text(instructs, [WIDTH / 2 - 207, 215], 30, "White", "sans-serif")
-        canvas.draw_text("high score: " + str(hi), [WIDTH / 2 - 90, 85], 30, "White", "sans-serif")
+        canvas.draw_text("high score: " + str(int(hi)) + " @ " + str(hi_acc) + "%", [50, HEIGHT - 50], 30, "White", "sans-serif")
+        canvas.draw_text(title, [WIDTH / 2 - 235, 150], 50, "White", "sans-serif")
+        canvas.draw_text(instructs, [WIDTH / 2 - 130, 215], 30, "White", "sans-serif")
+        canvas.draw_text("Hit SPACE to begin!", [WIDTH / 2 - 135, 400], 30, "White", "sans-serif")
+        canvas.draw_text("fire    SPACE", [50, 215], 20, "White", "monospace")
+        canvas.draw_text("turn    RIGHT", [50, 245], 20, "White", "monospace")
+        canvas.draw_text("        LEFT", [50, 268], 20, "White", "monospace")
+        canvas.draw_text("pause   P", [50, 328], 20, "White", "monospace")
+        canvas.draw_text("music   M", [50, 358], 20, "White", "monospace")
+        canvas.draw_text("move    UP", [50, 298], 20, "White", "monospace")
+        canvas.draw_text("reset   R", [50, 388], 20, "White", "monospace")
+       
  
     
 def reset():
-    global my_ship, msg, score, Missiles, Rocks, level, music, debris_image, nebula_image, state
+    global my_ship, score, Missiles, Rocks, level, music, debris_image, nebula_image, state, shots, accu
     
     state = 0
     
@@ -517,6 +548,8 @@ def reset():
     
     score = 0
     level = 1
+    shots = 0
+    accu = 0
     
     # reset ship
     my_ship = Ship([WIDTH / 2 + 45, HEIGHT / 2 + 45], [0, 0], 0, ship_image, ship_info)
@@ -551,7 +584,7 @@ def reset():
 # initialize frame
 frame = simplegui.create_frame("Asteroid Attack", WIDTH, HEIGHT)
 ButReset = frame.add_button("reset", reset, 100)
-tut = ["Left/Right to turn", "Up to thrust", "Space to shoot", "R to reset", "M to mute/unmute music"]
+tut = ["Left/Right to turn", "Up to thrust", "Space to shoot", "R to reset", "P to un/pause", "M to mute/unmute music"]
 for x in tut:
     frame.add_label(x, 300)
 
