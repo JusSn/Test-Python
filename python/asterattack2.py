@@ -5,8 +5,7 @@
 #|   \ |___  |   |  _|_/       |   | |___   
 
 # INSTRUCTIONS:
-# Codeskulptor framework and code available at http://www.codeskulptor.org/#user40_1wvNvlZNTgexpIP_0.py
-# 
+# Codeskulptor framework and code available at http://www.codeskulptor.org/#user40_q3ATkWhI9BJ8QZ5_0.py
 # (0. Google Chrome is recommended)
 # 1. Allow pop-ups
 # 2. Click the play button in top left corner 
@@ -14,7 +13,7 @@
 # 4. Controls explained on left-hand side of window. 
 # 5. Enjoy!
 # 6. If sound effects (explosion, thrust, and missile) do not work, please alert me!
-#		Also see line 46 of code.
+#       Also see line 46 of code.
 # 7. To turn off music after closing popup, hit the back-arrow on top left of CodeSkulptor.
 
 # DISCLAIMERS
@@ -23,7 +22,7 @@
 
 # extension of Rice University Python course's RiceRocks concept
 # original template by Scott Rixner et. al. of Rice University 
-# 	(their code is marked with --PROVIDED CODE--)
+#   (their code is marked with --PROVIDED CODE--)
 
 # Asteroid/environment particle art assets created by Kim Lathrop 
 # may be freely re-used in non-commercial projects, please credit Kim
@@ -89,7 +88,6 @@ heat_sound = simplegui.load_sound("http://vocaroo.com/media_command.php?media=s0
 shield_up_sound = simplegui.load_sound("http://vocaroo.com/media_command.php?media=s0woIgOOw6YD&command=download_mp3")
 shield_down_sound = simplegui.load_sound("http://vocaroo.com/media_command.php?media=s0YYcW2MNZKj&command=download_mp3")
 
-
 # globals for user interface
 WIDTH = 800
 HEIGHT = 600
@@ -119,7 +117,7 @@ bombs = 0
 doubles = 0 # doubleshot state
 shielded = 0 # invincible state
 
-graphics = False # turn off background and animation for better performance?
+graphics = True # turn off background and animation for better performance?
 v2 = True # denotes version 2 of the game with powerups
 
 acc = 0.08 # rotation acceleration
@@ -181,12 +179,12 @@ debs = random.choice([a, b, c, d, e, f, g])
 debris_image = simplegui.load_image(debs)
 
 nebula_info = ImageInfo([700, 500], [WIDTH, HEIGHT])
-ylw = "http://7-themes.com/data_images/out/47/6932033-space-background-25628.jpg"
-prp = "http://static.tumblr.com/bc660a9f1f3c2acfd47dda4834b9ce63/qdfhp89/s9an3665b/tumblr_static_pink_nebula_space_lights-wide1.jpg"
-blk = "http://7-themes.com/data_images/out/75/7027542-space-backgrounds-wallpaper.jpg"
-red = "http://p1.pichost.me/i/24/1473632.jpg"
-grn = "http://imagesci.com/img/2013/12/earth-space-background-2456-hd-wallpapers.jpg"
-blu = "http://images4.alphacoders.com/106/106826.jpg"
+ylw = simplegui.load_image("http://7-themes.com/data_images/out/47/6932033-space-background-25628.jpg")
+prp = simplegui.load_image("http://static.tumblr.com/bc660a9f1f3c2acfd47dda4834b9ce63/qdfhp89/s9an3665b/tumblr_static_pink_nebula_space_lights-wide1.jpg")
+blk = simplegui.load_image("http://7-themes.com/data_images/out/75/7027542-space-backgrounds-wallpaper.jpg")
+red = simplegui.load_image("http://p1.pichost.me/i/24/1473632.jpg")
+grn = simplegui.load_image("http://imagesci.com/img/2013/12/earth-space-background-2456-hd-wallpapers.jpg")
+blu = simplegui.load_image("http://images4.alphacoders.com/106/106826.jpg")
 
 order = [grn, blu, blk, ylw, prp, red]
 
@@ -375,10 +373,6 @@ class Sprite:
         
         # current stage of explodiness
         self.exploded = 0
-        
-        # play sound effect if available
-        if sound:
-            pass
                
     def draw(self, canvas):
         canvas.draw_image(self.image, self.image_center, self.image_size, self.pos, self.image_size, self.angle)
@@ -448,7 +442,7 @@ class Sprite:
                         shielded = 0
                     SpawnPowerup(level) # chance to spawn powerup
 
-                    if level % 8 == 0: # shot power increase every 10 levels
+                    if level % 8 == 0: # shot power increase every 8 levels
                         if pew < 4:
                             pew += 1
                             slow = speed[pew]
@@ -456,7 +450,7 @@ class Sprite:
                             pew_up_sound.play()
                 
                 if graphics:
-                    nebula_image = simplegui.load_image(order[(level - 1) % 24 / 4])
+                    nebula_image = order[(level - 1) % 24 / 4]
 
                 for z in range(0, level / 2): # number of rocks in next level
                                 
@@ -669,7 +663,7 @@ def Bomb():
 
 # create keypress handler
 def KeyDown(key):
-    global left, right 	# keeps track of keys to process conflicting presses. 
+    global left, right  # keeps track of keys to process conflicting presses. 
                         # can change direction without releasing key #1
                         # and continue in previous direction if key #1 is still pressed
                         # when key #2 is released
@@ -890,14 +884,14 @@ def reset():
     global my_ship, Missiles, Rocks, debris_image, nebula_image, state, a_missile_sound, b_missile_sound, missile_image
     global bombs, level, shots, accu, score, pew, slow, heat, doubles, shielded, powerup
     
+    explosion_ship.pause()
     state = 0
-    soundtrack.play()
         
     debs = random.choice([a, b, c, d, e, f, g]) # switch debris background
     debris_image = simplegui.load_image(debs)
     
     # nebs = random.choice([ylw, prp, blk, red, grn, blu]) # switch background image
-    nebula_image = simplegui.load_image(grn)
+    nebula_image = grn
     
     score = 0
     level = 1
