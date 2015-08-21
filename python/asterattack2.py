@@ -5,7 +5,7 @@
 #|   \ |___  |   |  _|_/       |   | |___   
 
 # INSTRUCTIONS:
-# Codeskulptor framework and code available at http://www.codeskulptor.org/#user40_W3isdGQ9yxaWBKl_6.py
+# Codeskulptor framework and code available at http://www.codeskulptor.org/#user40_8uDOrCjMy8_4.py
 # (0. Google Chrome is recommended)
 # 1. Allow pop-ups
 # 2. Click the play button in top left corner 
@@ -18,7 +18,7 @@
 
 # DISCLAIMERS
 # Justin Fan
-# Asteroid Attack 2 v2.2.3
+# Asteroid Attack 2 v2.2.4
 
 # extension of Rice University Python course's RiceRocks concept
 # original template by Scott Rixner et. al. of Rice University 
@@ -100,6 +100,7 @@ tab = 45
 top_edge = 215
 
 speed = {1:25, 2:6, 3:2.5, 4:1.3333}
+combo_colors = ["silver", "teal", "lime", "cyan", "fuchsia", "red", "orange", "yellow"]
 acc = 0.08 # rotation acceleration
 
 hi = 0
@@ -156,9 +157,11 @@ f = simplegui.load_image("http://commondatastorage.googleapis.com/codeskulptor-a
 g = simplegui.load_image("http://commondatastorage.googleapis.com/codeskulptor-assets/lathrop/debris3_blue.png")
 h = simplegui.load_image("http://commondatastorage.googleapis.com/codeskulptor-assets/lathrop/debris4_blue.png")
 g = simplegui.load_image("http://commondatastorage.googleapis.com/codeskulptor-assets/lathrop/debris_blend.png")
+
 debris_image = random.choice([a, b, c, d, e, f, g])
 
 nebula_info = ImageInfo([700, 500], [WIDTH, HEIGHT])
+
 ylw = simplegui.load_image("http://7-themes.com/data_images/out/47/6932033-space-background-25628.jpg")
 prp = simplegui.load_image("http://static.tumblr.com/bc660a9f1f3c2acfd47dda4834b9ce63/qdfhp89/s9an3665b/tumblr_static_pink_nebula_space_lights-wide1.jpg")
 blk = simplegui.load_image("http://7-themes.com/data_images/out/75/7027542-space-backgrounds-wallpaper.jpg")
@@ -362,9 +365,13 @@ class Sprite:
                
     def draw(self, canvas):
         canvas.draw_image(self.image, self.image_center, self.image_size, self.pos, self.image_size, self.angle)
+
+        if self.combo > 0:
+            combo_text = "+" + str(self.combo)
+            canvas.draw_text(combo_text, self.hit_pos, self.combo * 15, combo_colors[self.combo % 8], "sans-serif") 
     
     def update(self):
-        global Rocks, persist, slow, nebula_image, doubles, shielded, dead_missile
+        global Rocks, persist, slow, nebula_image, doubles, shielded
         global score, level, accu, state, hi, hi_acc, combo, pew
         
         # recalculate distance to ship
@@ -385,16 +392,12 @@ class Sprite:
                             if n.exploded == 0:
                                 n.hit_pos[0] = n.pos[0]
                                 n.hit_pos[1] = n.pos[1]
-                                dead_missile.add(n) # record location of hit, add to list
-                           
                             # missile reaches stage 1 of exploding
                             n.exploded = 1 # resets the explosion if it hits additional rocks
 
                             break # cease iterating through missiles for this rock that was just destroyed
-
                 # determine if rock has left screen
                 out_of_bounds = self.pos[0] > WIDTH + 100 or self.pos[0] < -100 or self.pos[1] > HEIGHT + 100 or self.pos[1] < -100
-            
             # rock OOB or contacts ship
                 if my_ship.alive:
 
@@ -455,7 +458,6 @@ class Sprite:
                     Rocks.remove(self)
                 elif self.kind == "missile":
                     Missiles.remove(self)
-                    dead_missile.remove(self)
 
         if len(Rocks) == 0: # no rocks left on screen
                 level_up()
@@ -814,14 +816,6 @@ def draw(canvas):
     # draw ship and sprites
         Rocks.draw(canvas) # custom draw method will iterate through list of asteroids
         Missiles.draw(canvas) # same for projectiles
-        
-        combo_colors = ["silver", "teal", "lime", "cyan", "fuchsia", "red", "orange", "yellow"]
-
-        if dead_missile:
-
-            for item in dead_missile.items:
-                combo_text = "+" + str(item.combo)
-                canvas.draw_text(combo_text, item.hit_pos, item.combo * 15, combo_colors[item.combo % 8], "sans-serif") 
             
         if powerup:
             powerup.draw(canvas)
@@ -923,7 +917,7 @@ def draw(canvas):
         canvas.draw_text("POWERUPS", [WIDTH - 280, HEIGHT - 90], 30, "White", "sans-serif")
         
 def reset():
-    global my_ship, Missiles, Rocks, debris_image, nebula_image, state, a_missile_sound, b_missile_sound, missile_image, dead_missile
+    global my_ship, Missiles, Rocks, debris_image, nebula_image, state, a_missile_sound, b_missile_sound, missile_image
     global bombs, level, shots, accu, score, pew, slow, heat, doubles, shielded, powerup, time
     
     explosion_ship.pause()
@@ -959,7 +953,6 @@ def reset():
     my_ship.thrust = False
     
     Missiles = Multiples(30) # limit to prevent slowdowns
-    dead_missile = Multiples(30) # missiles that manage to hit recorded here
     Rocks = Multiples(False) # will be limited by player ability
     # spawn first rock
     spawn_rock()
