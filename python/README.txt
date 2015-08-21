@@ -1,7 +1,9 @@
-PYTHON 2.7 
-Developed in CodeSkulptor by Rice University's Scott Rixner
+PYTHON 2.7
 
-All projects are open source.
+For Rice University's Python courses
+
+Asteroid Attack 2 is of my own design
+CodeSkulptor framework by Rice University's Scott Rixner
 
 To run:
 
