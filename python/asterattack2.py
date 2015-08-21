@@ -18,7 +18,7 @@
 
 # DISCLAIMERS
 # Justin Fan
-# Asteroid Attack 2 v2.2.4
+# Asteroid Attack 2 v2.2.5
 
 # extension of Rice University Python course's RiceRocks concept
 # original template by Scott Rixner et. al. of Rice University 
@@ -88,7 +88,6 @@ heat_sound = simplegui.load_sound("http://vocaroo.com/media_command.php?media=s0
 shield_up_sound = simplegui.load_sound("http://vocaroo.com/media_command.php?media=s0woIgOOw6YD&command=download_mp3")
 shield_down_sound = simplegui.load_sound("http://vocaroo.com/media_command.php?media=s0YYcW2MNZKj&command=download_mp3")
 
-
 # globals for user interface
 WIDTH = 800
 HEIGHT = 600
@@ -114,6 +113,7 @@ left = False
 right = False
 forw = True
 
+collide = 20
 persist = 36 # frames * 2 to show of missile explosion (affects when it is removed after detonating) 
 title = "ASTEROID ATTACK"
 instructs = "No rock shall pass!"
@@ -235,8 +235,25 @@ class Ship:
             canvas. draw_circle(self.pos_2, 47, 3, "yellow")
 
     def update(self):
-        
+        global state
+
         if self.alive:
+
+            for thing in Rocks.items:
+                # determine if rock has left screen
+                out_of_bounds = thing.pos[0] > WIDTH + 100 or thing.pos[0] < -100 or thing.pos[1] > HEIGHT + 100 or thing.pos[1] < -100
+                distance = dist(self.pos_2, thing.pos)
+                print distance
+                # rock OOB or contacts ship
+                if distance < (self.radius + collide):
+
+                    if not shielded > 0:
+                        self.alive = False
+                    else:
+                        thing.exploded = 1
+                elif out_of_bounds:
+                    self.alive = False   
+
             self.angle = self.angle + self.angle_vel
 
             if self.thrust:                
@@ -253,10 +270,12 @@ class Ship:
                 self.image_center[0] = 45
                 ship_thrust_sound.pause()
                 ship_thrust_sound.rewind()
-        else:
+
+        if not self.alive:
             self.exploded += 1
 
             if self.exploded == 1:
+                state = 2
                 explosion_ship.rewind()
                 explosion_ship.play()
                 ship_thrust_sound.pause()
@@ -264,8 +283,6 @@ class Ship:
 
                 self.image = explosion_blue2
                 self.image_size = explosion_info.get_size()
-                state = 2
-                soundtrack.pause() 
 
             self.image_center = [(self.exploded / 4) * 128 + 64, explosion_info.get_center()[1]]
             
@@ -278,13 +295,13 @@ class Ship:
         self.pos[1] += self.vel[1]
        
     def shoot(self):
+        global Rocks
         
         # can't shoot while dead!
-        if self.alive == True:
+        if self.alive:
             global a_missile_sound, b_missile_sound, missile_image, hi, hi_acc, accu, shots, heat
             
             if heat <= 6:
-                # allows new missiles to make sound on spawn
 
                 if pew == 4:
                     a_missile_sound = a_charged_sound
@@ -354,8 +371,7 @@ class Sprite:
             self.kind = "rock"
         elif self.radius == 3:
             self.kind = "missile"
-        # distance between object and ship
-        self.dist = dist(self.pos, my_ship.pos_2)   # distance between object and ship
+
         self.miss_dist = 1000                       # distance between object and a projectile
         self.vel = vel                              # object velocity
         self.sound = sound                          # sound effect if applicable
@@ -373,14 +389,11 @@ class Sprite:
     def update(self):
         global Rocks, persist, slow, nebula_image, doubles, shielded
         global score, level, accu, state, hi, hi_acc, combo, pew
-        
-        # recalculate distance to ship
-        self.dist = dist(self.pos, my_ship.pos_2)
 
         if self.kind == "rock": # rocks
 
             if self.exploded == 0:
-                # compare rock to every projectile currently in game
+                # compare rock to every projectile currently in game if it is still intact
                 for n in Missiles.items:    
                     # compare rock distance to missile n
                     if not n.exploded > persist:
@@ -396,20 +409,6 @@ class Sprite:
                             n.exploded = 1 # resets the explosion if it hits additional rocks
 
                             break # cease iterating through missiles for this rock that was just destroyed
-                # determine if rock has left screen
-                out_of_bounds = self.pos[0] > WIDTH + 100 or self.pos[0] < -100 or self.pos[1] > HEIGHT + 100 or self.pos[1] < -100
-            # rock OOB or contacts ship
-                if my_ship.alive:
-
-                    if self.dist < self.radius + 15:
-
-                        if not shielded > 0:
-                            my_ship.alive = False
-                        else:
-                            self.exploded = 1
-                    elif out_of_bounds:
-                        my_ship.alive = False   
-
         else: # is missile
             if self.exploded == 1:
                 self.vel[0] = self.vel[0] / slow
@@ -861,6 +860,7 @@ def draw(canvas):
             canvas.draw_polygon([LL, UL, UR, LR], 1, color, color)
         
         if state == 2: # Game Over state
+            soundtrack.pause() 
             center_text(frame, canvas, msg, 300, 100)
             
     elif state == 0: # Main Menu
