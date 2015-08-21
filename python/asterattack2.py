@@ -5,7 +5,7 @@
 #|   \ |___  |   |  _|_/       |   | |___   
 
 # INSTRUCTIONS:
-# Codeskulptor framework and code available at http://www.codeskulptor.org/#user40_W3isdGQ9yxaWBKl_5.py
+# Codeskulptor framework and code available at http://www.codeskulptor.org/#user40_W3isdGQ9yxaWBKl_6.py
 # (0. Google Chrome is recommended)
 # 1. Allow pop-ups
 # 2. Click the play button in top left corner 
@@ -18,7 +18,7 @@
 
 # DISCLAIMERS
 # Justin Fan
-# Asteroid Attack 2 v2.2.2
+# Asteroid Attack 2 v2.2.3
 
 # extension of Rice University Python course's RiceRocks concept
 # original template by Scott Rixner et. al. of Rice University 
@@ -221,13 +221,13 @@ class Ship:
 # END ------------------PROVIDED CODE--------------------------------------------------------------- END
         
         self.alive = True
-        self.pos_2 = [pos[0] - 45, pos[1] - 45]
-        self.side = True
-        
-        self.exploded = 0
+        self.pos_2 = [pos[0] - 45, pos[1] - 45] # offset position to make frame wrap-around movement smoother 
+        self.side = True                        # determines which gun (left/right) to fire next shot from
+        self.exploded = 0                       # current stage of explodiness
         
     def draw(self,canvas):
         canvas.draw_image(self.image, self.image_center, self.image_size, self.pos_2, self.image_size, self.angle)
+
         if shielded > 0 and self.alive:
             canvas. draw_circle(self.pos_2, 47, 3, "yellow")
 
@@ -235,27 +235,36 @@ class Ship:
         
         if self.alive:
             self.angle = self.angle + self.angle_vel
-            if self.thrust == True:                
+
+            if self.thrust:                
                 self.image_center[0] = 135
                 ship_thrust_sound.play()
-                if forw == True:
+
+                if forw:
                     self.vel[0] += 0.2 * math.cos(self.angle)
                     self.vel[1] += 0.2 * math.sin(self.angle)
                 else:
                     self.vel[0] -= 0.2 * math.cos(self.angle)
                     self.vel[1] -= 0.2 * math.sin(self.angle)
-                
             else:
                 self.image_center[0] = 45
                 ship_thrust_sound.pause()
                 ship_thrust_sound.rewind()
         else:
             self.exploded += 1
-            self.image = explosion_blue2
+
+            if self.exploded == 1:
+                explosion_ship.rewind()
+                explosion_ship.play()
+                ship_thrust_sound.pause()
+                ship_thrust_sound.rewind()
+
+                self.image = explosion_blue2
+                self.image_size = explosion_info.get_size()
+                state = 2
+                soundtrack.pause() 
+
             self.image_center = [(self.exploded / 4) * 128 + 64, explosion_info.get_center()[1]]
-            self.image_size = explosion_info.get_size()
-            ship_thrust_sound.pause()
-            ship_thrust_sound.rewind()
             
         self.vel[0] *= 0.98
         self.vel[1] *= 0.98
@@ -318,7 +327,6 @@ class Ship:
 
                 heat += 1
                 shots += 1
-
             else:
                 #weapon overheat
                 heat_sound.rewind()
@@ -344,22 +352,13 @@ class Sprite:
         elif self.radius == 3:
             self.kind = "missile"
         # distance between object and ship
-        self.dist = dist(self.pos, my_ship.pos_2)
-        
-        # distance between object and a projectile
-        self.miss_dist = 1000
-        
-        # object velocity
-        self.vel = vel
-        
-        # object sound effect
-        self.sound = sound
-        
-        # current stage of explodiness
-        self.exploded = 0
-        self.hit_pos = [0, 0]
-        
-        self.combo = 0
+        self.dist = dist(self.pos, my_ship.pos_2)   # distance between object and ship
+        self.miss_dist = 1000                       # distance between object and a projectile
+        self.vel = vel                              # object velocity
+        self.sound = sound                          # sound effect if applicable
+        self.exploded = 0                           # current stage of explodiness
+        self.hit_pos = [0, 0]                       # will store where missile strikes its first rock
+        self.combo = 0                              # stores the number of rocks destroyed by self
                
     def draw(self, canvas):
         canvas.draw_image(self.image, self.image_center, self.image_size, self.pos, self.image_size, self.angle)
@@ -372,10 +371,8 @@ class Sprite:
         self.dist = dist(self.pos, my_ship.pos_2)
 
         if self.kind == "rock": # rocks
-            if self.exploded == 1: # on bomb use. Normally, the missile, not rock, explodes when a rock is destroyed.
-                self.image = random.choice([explosion_image, explosion_blue, explosion_orange])
 
-            elif self.exploded == 0:
+            if self.exploded == 0:
                 # compare rock to every projectile currently in game
                 for n in Missiles.items:    
                     # compare rock distance to missile n
@@ -384,58 +381,36 @@ class Sprite:
 
                         if self.miss_dist < self.radius: # it's a hit!
                             Rocks.items.remove(self) # remove rock immediately so that it doesn't eat extra shots
-                            score += 1
-                            n.combo += 1
 
                             if n.exploded == 0:
                                 n.hit_pos[0] = n.pos[0]
                                 n.hit_pos[1] = n.pos[1]
-                                dead_missile.add(n) # record location of hit
-                                
-                            if pew >= 4:
-                                explosion_sound = explosion_charged
-                            else:
-                                explosion_sound = random.choice([explosion_1, explosion_2])
-                            explosion_sound.rewind()
-                            explosion_sound.play()
+                                dead_missile.add(n) # record location of hit, add to list
                            
                             # missile reaches stage 1 of exploding
                             n.exploded = 1 # resets the explosion if it hits additional rocks
-                                    
+
                             break # cease iterating through missiles for this rock that was just destroyed
-                        
-            # determine if rock has left screen
-            out_of_bounds = self.pos[0] > WIDTH + 100 or self.pos[0] < -100 or self.pos[1] > HEIGHT + 100 or self.pos[1] < -100
+
+                # determine if rock has left screen
+                out_of_bounds = self.pos[0] > WIDTH + 100 or self.pos[0] < -100 or self.pos[1] > HEIGHT + 100 or self.pos[1] < -100
             
             # rock OOB or contacts ship
-            if my_ship.alive and self.exploded == 0:
-                if self.dist < self.radius + 15:
-                    if not shielded > 0:
-                        my_ship.alive = False
-                    else:
-                        self.exploded += 1
-                        explosion_sound = random.choice([explosion_1, explosion_2])
-                        explosion_sound.rewind()
-                        explosion_sound.play()
+                if my_ship.alive:
 
-                elif out_of_bounds:
-                    my_ship.alive = False
+                    if self.dist < self.radius + 15:
 
-                if not my_ship.alive:
-                    explosion_ship.rewind()
-                    explosion_ship.play()
-       
-                    state = 2
-                    soundtrack.pause()
+                        if not shielded > 0:
+                            my_ship.alive = False
+                        else:
+                            self.exploded = 1
+                    elif out_of_bounds:
+                        my_ship.alive = False   
 
         else: # is missile
             if self.exploded == 1:
-                self.image = random.choice([explosion_image, explosion_blue, explosion_orange])
-                self.image_center = [64, explosion_info.get_center()[1]]
-                self.image_size = explosion_info.get_size()
                 self.vel[0] = self.vel[0] / slow
                 self.vel[1] = self.vel[1] / slow
-                self.angle_vel = 0
 
         if shots == 0:
             accu = 0.00;
@@ -455,9 +430,27 @@ class Sprite:
         
         # update exploding object animations
         if self.exploded > 0:
+
+            if self.exploded == 1:
+                explosion_sound = random.choice([explosion_1, explosion_2])
+
+                if self.kind == "missile":
+                    score += 1
+                    self.combo += 1
+
+                    if pew >= 4:
+                        explosion_sound = explosion_charged
+
+                explosion_sound.rewind()
+                explosion_sound.play()
+                self.image = random.choice([explosion_image, explosion_blue, explosion_orange])
+                self.image_size = explosion_info.get_size()
+
             self.image_center = [(self.exploded / 2) * 128 + 64, explosion_info.get_center()[1]]
             self.exploded += 1
+
             if self.exploded > 48:
+
                 if self.kind == "rock":
                     Rocks.remove(self)
                 elif self.kind == "missile":
@@ -511,18 +504,19 @@ class Power:
         y = random.randrange(50, HEIGHT - 50)
         
         self.pos = [x, y]
-        self.gone = False
-        self.picked = False
+        self.gone = False       
+        self.picked = False     # Picked up
         
     def update(self):
         
         global bombs, Rocks, slow, pew, doubles, shielded
 
-        if state == 2:
+        if state == 2: # Game over
             self.gone = True
 
         self.dist = dist(my_ship.pos_2, self.pos)
-        if self.dist < self.radius + 27:
+
+        if self.dist < self.radius + 27: # Ship proximity
             self.gone = True
             self.picked = True
             
@@ -530,14 +524,16 @@ class Power:
             self.pos = [1000, 1000]
             
             if self.picked == True:
+
                 if self.color == "red":
                     bomb_pick_sound.rewind()
                     bomb_pick_sound.play()
                     bombs += 1
-                    
+
                 elif self.color == "blue":
                     freeze_sound.rewind()
                     freeze_sound.play()
+
                     for x in Rocks.items:
                         x.image = asteroid_frozen
                         x.vel[0] *= 0.1
@@ -545,6 +541,7 @@ class Power:
                         x.angle_vel = 0
 
                 elif self.color == "lime":
+
                     if pew < 4:
                         pew += 1
                         slow = speed[pew]
@@ -575,6 +572,7 @@ def level_up():
     level += 1
 
     if v2 == True: # if powerups are enabled
+
         if doubles == 1:
             doubles = 2
         elif doubles == 2:
@@ -586,9 +584,11 @@ def level_up():
             shield_down_sound.rewind()
             shield_down_sound.play()
             shielded = 0
+
         SpawnPowerup(level) # chance to spawn powerup
 
         if level % 8 == 0: # shot power increase every 10 levels
+
             if pew < 4:
                 pew += 1
                 slow = speed[pew]
@@ -610,8 +610,10 @@ def spawn_rock():
     loc = [1000, 1000]
 
     valid = False
+
     while not valid: # prevents asteroids from spawning too close to ship
         pos = random.choice([[-40, y], [WIDTH + 40, y], [x, -40], [x, HEIGHT + 40]])
+
         if dist(my_ship.pos_2, pos) > 200:
             loc = pos
             valid = True
@@ -619,21 +621,18 @@ def spawn_rock():
     vel = [0, 0] # initialize velocity list
         # Spin
     angle_vel = random.randint(-10, 10) * .01
-
-           # set horizontal direction towards middle of screen
-    if loc[0] < WIDTH / 2:
+           
+    if loc[0] < WIDTH / 2: # set horizontal direction towards middle of screen
         vel[0] = random.randint(5, 15) * 0.1
     else:
         vel[0] = random.randint(5, 15) * -0.1
-
-                # set vertical direction towards middle of screen
-    if loc[1] < HEIGHT / 2:
+                
+    if loc[1] < HEIGHT / 2: # set vertical direction towards middle of screen
         vel[1] = random.randint(5, 15) * 0.1
     else:
         vel[1] = random.randint(5, 15) * -0.1
-                
-                # create rock and add to list    
-    a_rock = Sprite(asteroid_image, asteroid_info, None, loc, vel, 0, angle_vel)
+                 
+    a_rock = Sprite(asteroid_image, asteroid_info, None, loc, vel, 0, angle_vel) # create rock and add to list    
     Rocks.add(a_rock)
 
 def SpawnPowerup(o_level):
@@ -644,11 +643,14 @@ def SpawnPowerup(o_level):
     global powerup
     
     chance = random.choice(range(0, 10))
+
     if chance <= 4:
         color = random.choice(["red","lime","cyan","yellow","blue"])
+
         if pew >= 4 and color == "lime":
             color = "cyan"
-        powerup = Power(color)
+
+        powerup = Power(color) # Recreating object resets its position back on screen
 
 def Bomb():
     global bombs, Rocks
@@ -660,13 +662,13 @@ def Bomb():
         explosion_2.rewind()
         explosion_2.play()
         Rocks.bombed = True # prevents bomb from being used until next level starts
+
         for x in Rocks.items:
             x.exploded += 1
     else:
         nobombs_sound.rewind()
         nobombs_sound.play()
     
-
 # create keypress handler
 def KeyDown(key):
     global left, right  # keeps track of keys to process conflicting presses. 
@@ -692,14 +694,18 @@ def KeyDown(key):
         forw = False
         
     elif key == simplegui.KEY_MAP["space"]:
+
         if state == 0:
             state = 1
+
             if v2:
                 bombs = 1
+
         elif state == 1:
             my_ship.shoot()
             
     elif key == simplegui.KEY_MAP["b"]:
+
         if state == 1:
             Bomb()
         
@@ -707,6 +713,7 @@ def KeyDown(key):
         reset()
     
     elif key == simplegui.KEY_MAP["p"]:
+
         if state == 1:
             soundtrack.pause()
             pause_sound.rewind()
@@ -720,6 +727,7 @@ def KeyDown(key):
             state = 1
        
     elif key == simplegui.KEY_MAP["m"]:
+
         if music == True:
             soundtrack.set_volume(0) # mute music
             music = False
@@ -733,6 +741,7 @@ def KeyUp(key):
     
     if key == simplegui.KEY_MAP["left"]:
         left = False
+
         if right == False:
             my_ship.angle_vel = 0
         else:
@@ -740,6 +749,7 @@ def KeyUp(key):
     
     elif key == simplegui.KEY_MAP["right"]:
         right = False
+
         if left == False:
             my_ship.angle_vel = 0
         else:
@@ -748,21 +758,27 @@ def KeyUp(key):
     elif key == simplegui.KEY_MAP["up"] or key == simplegui.KEY_MAP["down"]:
         my_ship.thrust = False
 
-def OnClick(pos):
+def OnClick(pos): # turn on/off graphics and powerups on main menu
     global graphics, v2
 
     if state == 0:
+
         if WIDTH - 80 < pos[0] and pos[0] < WIDTH - 50:
+
             if HEIGHT - 80 < pos[1] and pos[1] < HEIGHT - 50:
+
                 if not graphics:
                     graphics = True
                 else:
                     graphics = False
+
             elif HEIGHT - 120 < pos[1] and pos[1] < HEIGHT - 90:
+
                 if not v2:
                     v2 = True
                 else:
                     v2 = False
+
 def center_text(frame, canvas, text, y, point, color = "white", face = "sans-serif"):
     pixels = frame.get_canvas_textwidth(text, point, face)
     canvas.draw_text(text, [WIDTH / 2 - pixels / 2, y], point, color, face)
@@ -771,15 +787,18 @@ def center_text(frame, canvas, text, y, point, color = "white", face = "sans-ser
 def draw(canvas): 
     global time, heat
     soundtrack.play()
-    
     # animate background
     time -= 1
+
     if time % 40 == 0: # weapon cooldown rate
+
         if heat > 0:
             heat -= 1
 
     if graphics:
+
         # ------------------PROVIDED CODE---------------------------------------------------------------
+
         wtime = (time / 4) % WIDTH
         center = debris_info.get_center()
         size = debris_info.get_size()
@@ -790,13 +809,16 @@ def draw(canvas):
         # END ------------------PROVIDED CODE--------------------------------------------------------------- END
 
     my_ship.draw(canvas)
+
     if state > 0 and state < 4: # in-game states
     # draw ship and sprites
         Rocks.draw(canvas) # custom draw method will iterate through list of asteroids
         Missiles.draw(canvas) # same for projectiles
         
         combo_colors = ["silver", "teal", "lime", "cyan", "fuchsia", "red", "orange", "yellow"]
+
         if dead_missile:
+
             for item in dead_missile.items:
                 combo_text = "+" + str(item.combo)
                 canvas.draw_text(combo_text, item.hit_pos, item.combo * 15, combo_colors[item.combo % 8], "sans-serif") 
@@ -810,15 +832,12 @@ def draw(canvas):
             Rocks.update()
             Missiles.update()
             my_ship.update()
-            
         else:
             center_text(frame, canvas, "PAUSED", 200, 100, "White", "sans-serif")
-        
         # HUD updates
         canvas.draw_text("level " + str(level), [50, 80], 40, "White", "sans-serif")
         canvas.draw_text(str(int(score)), [50, HEIGHT - 90], 40, "White", "sans-serif")
         canvas.draw_text(str(accu) + "%", [50, HEIGHT - 50], 40, "White", "sans-serif")
-        
 
         if v2: # powerups enabled
             canvas.draw_text(str(bombs), [WIDTH - 75, 80], 40, "Red", "sans-serif")
@@ -830,6 +849,7 @@ def draw(canvas):
             canvas.draw_text(str(pew), [WIDTH - 115, HEIGHT - 50], 40, pew_color, "sans-serif")
 
         for x in range(0, heat):
+
             if x < 2:
                 color = "lime"
             elif x < 4:
@@ -838,6 +858,7 @@ def draw(canvas):
                 color = "orange"
             elif x == 6:
                 color = "red"
+
             LL = [WIDTH - 75, HEIGHT - 50 - x * 30]
             UL = [WIDTH - 75, HEIGHT - 75 - x * 30]
             UR = [WIDTH - 50, HEIGHT - 75 - x * 30]
@@ -849,7 +870,6 @@ def draw(canvas):
             center_text(frame, canvas, msg, 300, 100)
             
     elif state == 0: # Main Menu
-    
         center_text(frame, canvas, "2", 155, 150, "cyan", "serif")
         center_text(frame, canvas, title, 125, 50)
         center_text(frame, canvas, instructs, 215, 30)
@@ -871,16 +891,19 @@ def draw(canvas):
         UL = [WIDTH - 80, HEIGHT - 80]
         UR = [WIDTH - 50, HEIGHT - 80]
         LR = [WIDTH - 50, HEIGHT - 50]
-        if graphics:
+
+        if graphics: # if graphics are turned on
             canvas.draw_polygon([LL, UL, UR, LR], 6, "White", "Cyan")
         else:
             canvas.draw_polygon([LL, UL, UR, LR], 6, "White", "Gray")
+
         c = 1
         LL = [WIDTH - 80, HEIGHT - 50 - c * 40]
         UL = [WIDTH - 80, HEIGHT - 80 - c * 40]
         UR = [WIDTH - 50, HEIGHT - 80 - c * 40]
         LR = [WIDTH - 50, HEIGHT - 50 - c * 40]
-        if v2:
+
+        if v2: # if powerups are enabled
             canvas.draw_polygon([LL, UL, UR, LR], 6, "White", "Cyan")
 
             canvas.draw_circle([edge2, top_edge - 7], 13, 3, "White", "red")
@@ -895,10 +918,10 @@ def draw(canvas):
             canvas.draw_text("shield", [edge2 + tab, top(s2, 4)], 20, "White", "monospace")
         else:
             canvas.draw_polygon([LL, UL, UR, LR], 6, "White", "Gray")
+
         canvas.draw_text("GRAPHICS", [WIDTH - 280, HEIGHT - 50], 30, "White", "sans-serif")
         canvas.draw_text("POWERUPS", [WIDTH - 280, HEIGHT - 90], 30, "White", "sans-serif")
         
-       
 def reset():
     global my_ship, Missiles, Rocks, debris_image, nebula_image, state, a_missile_sound, b_missile_sound, missile_image, dead_missile
     global bombs, level, shots, accu, score, pew, slow, heat, doubles, shielded, powerup, time
@@ -910,8 +933,7 @@ def reset():
     soundtrack.play()
         
     debris_image = random.choice([a, b, c, d, e, f, g])
-    
-    # nebs = random.choice([ylw, prp, blk, red, grn, blu]) # switch background image
+
     nebula_image = grn
     
     score = 0
@@ -932,7 +954,6 @@ def reset():
     a_missile_sound = a_miss_sound
     b_missile_sound = b_miss_sound
     missile_image = shot_image
-    
     # reset ship
     my_ship = Ship([WIDTH / 2 + 45, HEIGHT / 2 + 45], [0, 0], 0, ship_image, ship_info)
     my_ship.thrust = False
@@ -940,22 +961,17 @@ def reset():
     Missiles = Multiples(30) # limit to prevent slowdowns
     dead_missile = Multiples(30) # missiles that manage to hit recorded here
     Rocks = Multiples(False) # will be limited by player ability
-    
     # spawn first rock
     spawn_rock()
-    
-# initialize frame
-frame = simplegui.create_frame("Asteroid Attack", WIDTH, HEIGHT)
-ButReset = frame.add_button("reset", reset, 100)
 
+frame = simplegui.create_frame("Asteroid Attack", WIDTH, HEIGHT) # initialize frame
+ButReset = frame.add_button("reset", reset, 100)
 # initialize ship and two sprites
 reset()
-
 # register handlers
 frame.set_draw_handler(draw)
 frame.set_keydown_handler(KeyDown)
 frame.set_keyup_handler(KeyUp)
 frame.set_mouseclick_handler(OnClick)
-
 # get things rolling
 frame.start()
