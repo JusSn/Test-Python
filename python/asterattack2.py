@@ -5,7 +5,7 @@
 #|   \ |___  |   |  _|_/       |   | |___   
 
 # INSTRUCTIONS:
-# Codeskulptor framework and code available at http://www.codeskulptor.org/#user40_W3isdGQ9yxaWBKl_4.py
+# Codeskulptor framework and code available at http://www.codeskulptor.org/#user40_W3isdGQ9yxaWBKl_5.py
 # (0. Google Chrome is recommended)
 # 1. Allow pop-ups
 # 2. Click the play button in top left corner 
@@ -18,7 +18,7 @@
 
 # DISCLAIMERS
 # Justin Fan
-# Asteroid Attack 2 
+# Asteroid Attack 2 v2.2.2
 
 # extension of Rice University Python course's RiceRocks concept
 # original template by Scott Rixner et. al. of Rice University 
