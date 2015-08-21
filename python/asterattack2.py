@@ -5,7 +5,7 @@
 #|   \ |___  |   |  _|_/       |   | |___   
 
 # INSTRUCTIONS:
-# Codeskulptor framework and code available at http://www.codeskulptor.org/#user40_W3isdGQ9yxaWBKl_0.py
+# Codeskulptor framework and code available at http://www.codeskulptor.org/#user40_W3isdGQ9yxaWBKl_1.py
 # (0. Google Chrome is recommended)
 # 1. Allow pop-ups
 # 2. Click the play button in top left corner 
@@ -339,6 +339,10 @@ class Sprite:
         
     # END ------------------PROVIDED CODE--------------------------------------------------------------- END
         
+        if self.radius == 40:
+            self.kind = "rock"
+        elif self.radius == 3:
+            self.kind = "missile"
         # distance between object and ship
         self.dist = dist(self.pos, my_ship.pos_2)
         
@@ -367,57 +371,38 @@ class Sprite:
         # recalculate distance to ship
         self.dist = dist(self.pos, my_ship.pos_2)
 
-        if self.radius == 40: # rocks
-            
-            if self.exploded > 0:
+        if self.kind == "rock": # rocks
+            if self.exploded == 1: # on bomb use. Normally, the missile, not rock, explodes when a rock is destroyed.
                 self.image = random.choice([explosion_image, explosion_blue, explosion_orange])
-                self.image_center = [(self.exploded / 2) * 128 + 64, explosion_info.get_center()[1]]
-                self.exploded += 1
-                self.vel = [0, 0]
-                if self.exploded > 48:
-                    Rocks.items.remove(self)
-            
-            # compare rock to every projectile currently in game
-            for n in Missiles.items:    
-                if n.exploded > persist:
-                        Missiles.items.remove(n)
-                        dead_missile.items.remove(n)# remove projectile after explosion animation completes
-                else:
-                    
-                    # compare rock distance to missile n
-                    self.miss_dist = dist(self.pos, n.pos)
 
-                    if self.miss_dist < self.radius: # it's a hit!
-                        Rocks.items.remove(self)
-                        score += 1
-                        n.combo += 1
-                        if n.exploded == 0:
-                            n.hit_pos[0] = n.pos[0]
-                            n.hit_pos[1] = n.pos[1]
-                            dead_missile.add(n) # record location of hit
-                            
-                        if pew >= 4:
-                            explosion_sound = explosion_charged
-                        else:
-                            explosion_sound = random.choice([explosion_1, explosion_2])
-                        explosion_sound.rewind()
-                        explosion_sound.play()
-                       
-                        # missile reaches stage 1 of exploding
-                        n.exploded = 1 # resets the explosion if it hits additional rocks
-                        n.image = random.choice([explosion_image, explosion_blue, explosion_orange])
-                        n.image_center = [64, explosion_info.get_center()[1]]
-                        n.image_size = explosion_info.get_size()
-                        n.vel[0] = n.vel[0] / slow
-                        n.vel[1] = n.vel[1] / slow
-                        n.angle_vel = 0
-                        
-                        # remove rock immediately so that it doesn't eat extra shots
+            elif self.exploded == 0:
+                # compare rock to every projectile currently in game
+                for n in Missiles.items:    
+                    # compare rock distance to missile n
+                    if not n.exploded > 35:
+                        self.miss_dist = dist(self.pos, n.pos)
+
+                        if self.miss_dist < self.radius: # it's a hit!
+                            Rocks.items.remove(self) # remove rock immediately so that it doesn't eat extra shots
+                            score += 1
+                            n.combo += 1
+
+                            if n.exploded == 0:
+                                n.hit_pos[0] = n.pos[0]
+                                n.hit_pos[1] = n.pos[1]
+                                dead_missile.add(n) # record location of hit
                                 
-                        break # cease iterating through missiles for this rock that was just destroyed
-                        
-            if len(Rocks) == 0: # no rocks left on screen
-                level_up()
+                            if pew >= 4:
+                                explosion_sound = explosion_charged
+                            else:
+                                explosion_sound = random.choice([explosion_1, explosion_2])
+                            explosion_sound.rewind()
+                            explosion_sound.play()
+                           
+                            # missile reaches stage 1 of exploding
+                            n.exploded = 1 # resets the explosion if it hits additional rocks
+                                    
+                            break # cease iterating through missiles for this rock that was just destroyed
                         
             # determine if rock has left screen
             out_of_bounds = self.pos[0] > WIDTH + 100 or self.pos[0] < -100 or self.pos[1] > HEIGHT + 100 or self.pos[1] < -100
@@ -442,7 +427,16 @@ class Sprite:
        
                     state = 2
                     soundtrack.pause()
-        
+
+        else: # is missile
+            if self.exploded == 1:
+                self.image = random.choice([explosion_image, explosion_blue, explosion_orange])
+                self.image_center = [64, explosion_info.get_center()[1]]
+                self.image_size = explosion_info.get_size()
+                self.vel[0] = self.vel[0] / slow
+                self.vel[1] = self.vel[1] / slow
+                self.angle_vel = 0
+
         if shots == 0:
             accu = 0.00;
         else:
@@ -463,12 +457,22 @@ class Sprite:
         if self.exploded > 0:
             self.image_center = [(self.exploded / 2) * 128 + 64, explosion_info.get_center()[1]]
             self.exploded += 1
+            if self.exploded > 48:
+                if self.kind == "rock":
+                    Rocks.remove(self)
+                elif self.kind == "missile":
+                    Missiles.remove(self)
+                    dead_missile.remove(self)
+
+        if len(Rocks) == 0: # no rocks left on screen
+                level_up()
 
 # container class for object lists. update will iterate through these for missile and rock
 class Multiples:
-    def __init__(self, maxi = 100):
+    def __init__(self, bombed = True, maxi = 100):
         self.MAX = maxi
         self.items = []
+        self.bombed = bombed # True if bomb was already used on this set
         
     def __len__(self):
         return len(self.items)
@@ -490,9 +494,9 @@ class Multiples:
     def maxi(self, maxi):
         self.MAX = maxi
     
-    def remove(self, ind = 0):
-        if len(self.items) > 0:
-            self.items.pop(ind)
+    def remove(self, thing):
+        if len(self.items) > 0 and thing:
+            self.items.remove(thing)
             
 # //////////////////////Asteroid Attack 2/////////////////////
             
@@ -596,6 +600,7 @@ def level_up():
 
     for z in range(0, level / 2): # number of rocks in next level
         spawn_rock()
+    Rocks.bombed = False # allows bomb use on this set
 
 def spawn_rock():
     global Rocks
@@ -646,14 +651,15 @@ def SpawnPowerup(o_level):
         powerup = Power(color)
 
 def Bomb():
-    global bombs 
+    global bombs, Rocks
     
-    if bombs > 0:
+    if bombs > 0 and not Rocks.bombed:
         bombs -= 1
         explosion_1.rewind()
         explosion_1.play()
         explosion_2.rewind()
         explosion_2.play()
+        Rocks.bombed = True # prevents bomb from being used until next level starts
         for x in Rocks.items:
             x.exploded += 1
     else:
@@ -933,7 +939,7 @@ def reset():
     
     Missiles = Multiples(30) # limit to prevent slowdowns
     dead_missile = Multiples(30) # missiles that manage to hit recorded here
-    Rocks = Multiples() # will be limited by player ability
+    Rocks = Multiples(False) # will be limited by player ability
     
     # spawn first rock
     spawn_rock()
