@@ -5,7 +5,7 @@
 #|   \ |___  |   |  _|_/       |   | |___   
 
 # INSTRUCTIONS:
-# Codeskulptor framework and code available at http://www.codeskulptor.org/#user40_W3isdGQ9yxaWBKl_1.py
+# Codeskulptor framework and code available at http://www.codeskulptor.org/#user40_W3isdGQ9yxaWBKl_4.py
 # (0. Google Chrome is recommended)
 # 1. Allow pop-ups
 # 2. Click the play button in top left corner 
@@ -93,7 +93,7 @@ shield_down_sound = simplegui.load_sound("http://vocaroo.com/media_command.php?m
 WIDTH = 800
 HEIGHT = 600
 edge1 = 50
-edge2 = 630
+edge2 = WIDTH - 170
 s1 = 30
 s2 = 40
 tab = 45
@@ -379,7 +379,7 @@ class Sprite:
                 # compare rock to every projectile currently in game
                 for n in Missiles.items:    
                     # compare rock distance to missile n
-                    if not n.exploded > 35:
+                    if not n.exploded > persist:
                         self.miss_dist = dist(self.pos, n.pos)
 
                         if self.miss_dist < self.radius: # it's a hit!
