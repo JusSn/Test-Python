@@ -5,7 +5,7 @@
 #|   \ |___  |   |  _|_/       |   | |___   
 
 # INSTRUCTIONS:
-# Codeskulptor framework and code available at http://www.codeskulptor.org/#user40_8uDOrCjMy8_4.py
+# Codeskulptor framework and code available at http://www.codeskulptor.org/#user40_8uDOrCjMy8_6.py
 # (0. Google Chrome is recommended)
 # 1. Allow pop-ups
 # 2. Click the play button in top left corner 
@@ -240,19 +240,19 @@ class Ship:
         if self.alive:
 
             for thing in Rocks.items:
-                # determine if rock has left screen
-                out_of_bounds = thing.pos[0] > WIDTH + 100 or thing.pos[0] < -100 or thing.pos[1] > HEIGHT + 100 or thing.pos[1] < -100
-                distance = dist(self.pos_2, thing.pos)
-                print distance
-                # rock OOB or contacts ship
-                if distance < (self.radius + collide):
+                if thing.exploded == 0:
+                    # determine if rock has left screen
+                    out_of_bounds = thing.pos[0] > WIDTH + 100 or thing.pos[0] < -100 or thing.pos[1] > HEIGHT + 100 or thing.pos[1] < -100
+                    distance = dist(self.pos_2, thing.pos)
+                    # rock OOB or contacts ship
+                    if distance < (self.radius + collide):
 
-                    if not shielded > 0:
-                        self.alive = False
-                    else:
-                        thing.exploded = 1
-                elif out_of_bounds:
-                    self.alive = False   
+                        if not shielded > 0:
+                            self.alive = False
+                        else:
+                            thing.exploded = 1
+                    elif out_of_bounds:
+                        self.alive = False   
 
             self.angle = self.angle + self.angle_vel
 
@@ -299,7 +299,7 @@ class Ship:
         
         # can't shoot while dead!
         if self.alive:
-            global a_missile_sound, b_missile_sound, missile_image, hi, hi_acc, accu, shots, heat
+            global a_missile_sound, b_missile_sound, missile_image, shots, heat
             
             if heat <= 6:
 
@@ -387,8 +387,7 @@ class Sprite:
             canvas.draw_text(combo_text, self.hit_pos, self.combo * 15, combo_colors[self.combo % 8], "sans-serif") 
     
     def update(self):
-        global Rocks, persist, slow, nebula_image, doubles, shielded
-        global score, level, accu, state, hi, hi_acc, combo, pew
+        global Rocks, slow, accu, hi_acc, hi, score
 
         if self.kind == "rock": # rocks
 
