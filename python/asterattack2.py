@@ -5,7 +5,7 @@
 #|   \ |___  |   |  _|_/       |   | |___   
 
 # INSTRUCTIONS:
-# Codeskulptor framework and code available at http://www.codeskulptor.org/#user40_q3ATkWhI9BJ8QZ5_0.py
+# Codeskulptor framework and code available at http://www.codeskulptor.org/#user40_W3isdGQ9yxaWBKl_0.py
 # (0. Google Chrome is recommended)
 # 1. Allow pop-ups
 # 2. Click the play button in top left corner 
@@ -88,6 +88,7 @@ heat_sound = simplegui.load_sound("http://vocaroo.com/media_command.php?media=s0
 shield_up_sound = simplegui.load_sound("http://vocaroo.com/media_command.php?media=s0woIgOOw6YD&command=download_mp3")
 shield_down_sound = simplegui.load_sound("http://vocaroo.com/media_command.php?media=s0YYcW2MNZKj&command=download_mp3")
 
+
 # globals for user interface
 WIDTH = 800
 HEIGHT = 600
@@ -98,41 +99,21 @@ s2 = 40
 tab = 45
 top_edge = 215
 
-score = 0.0
-accu = 0.00
-hi = 0
-hi_acc = 0
-shots = 0 # used against score to calculate accuracy
-level = 1
-time = 0
-
-heat = 0 # overheat protection on weapons prevents spamming :^)
-
-pew = 1 # level of weapon power. higher power decreases shot slowdown so that explosion can hit further rocks.
 speed = {1:25, 2:6, 3:2.5, 4:1.3333}
-
-powerup = None
-bombs = 0
-
-doubles = 0 # doubleshot state
-shielded = 0 # invincible state
-
-graphics = True # turn off background and animation for better performance?
-v2 = True # denotes version 2 of the game with powerups
-
 acc = 0.08 # rotation acceleration
 
+hi = 0
+hi_acc = 0
+
 music = True
+graphics = False # turn off background and animation for better performance?
+v2 = True # denotes version 2 of the game with powerups
 
 left = False
 right = False
 forw = True
 
-state = 0 # title screen state
-
-persist = 36 # frames * 2 to show of missile explosion (affects when it is removed after detonating)
-slow = speed[pew] # rate to slow down shot after hitting rock. Missiles not done exploding can blow up multiple asteroids.
-
+persist = 36 # frames * 2 to show of missile explosion (affects when it is removed after detonating) 
 title = "ASTEROID ATTACK"
 instructs = "No rock shall pass!"
 msg = "GAME OVER"
@@ -166,17 +147,16 @@ debris_info = ImageInfo([320, 240], [640, 480])
 
 # END ------------------PROVIDED CODE--------------------------------------------------------------- END
 
-a = "http://commondatastorage.googleapis.com/codeskulptor-assets/lathrop/debris1_brown.png"
-b = "http://commondatastorage.googleapis.com/codeskulptor-assets/lathrop/debris2_brown.png"
-c = "http://commondatastorage.googleapis.com/codeskulptor-assets/lathrop/debris3_brown.png"
-d = "http://commondatastorage.googleapis.com/codeskulptor-assets/lathrop/debris4_brown.png"
-e = "http://commondatastorage.googleapis.com/codeskulptor-assets/lathrop/debris1_blue.png"
-f = "http://commondatastorage.googleapis.com/codeskulptor-assets/lathrop/debris2_blue.png"
-g = "http://commondatastorage.googleapis.com/codeskulptor-assets/lathrop/debris3_blue.png"
-h = "http://commondatastorage.googleapis.com/codeskulptor-assets/lathrop/debris4_blue.png"
-g = "http://commondatastorage.googleapis.com/codeskulptor-assets/lathrop/debris_blend.png"
-debs = random.choice([a, b, c, d, e, f, g])
-debris_image = simplegui.load_image(debs)
+a = simplegui.load_image("http://commondatastorage.googleapis.com/codeskulptor-assets/lathrop/debris1_brown.png")
+b = simplegui.load_image("http://commondatastorage.googleapis.com/codeskulptor-assets/lathrop/debris2_brown.png")
+c = simplegui.load_image("http://commondatastorage.googleapis.com/codeskulptor-assets/lathrop/debris3_brown.png")
+d = simplegui.load_image("http://commondatastorage.googleapis.com/codeskulptor-assets/lathrop/debris4_brown.png")
+e = simplegui.load_image("http://commondatastorage.googleapis.com/codeskulptor-assets/lathrop/debris1_blue.png")
+f = simplegui.load_image("http://commondatastorage.googleapis.com/codeskulptor-assets/lathrop/debris2_blue.png")
+g = simplegui.load_image("http://commondatastorage.googleapis.com/codeskulptor-assets/lathrop/debris3_blue.png")
+h = simplegui.load_image("http://commondatastorage.googleapis.com/codeskulptor-assets/lathrop/debris4_blue.png")
+g = simplegui.load_image("http://commondatastorage.googleapis.com/codeskulptor-assets/lathrop/debris_blend.png")
+debris_image = random.choice([a, b, c, d, e, f, g])
 
 nebula_info = ImageInfo([700, 500], [WIDTH, HEIGHT])
 ylw = simplegui.load_image("http://7-themes.com/data_images/out/47/6932033-space-background-25628.jpg")
@@ -373,12 +353,16 @@ class Sprite:
         
         # current stage of explodiness
         self.exploded = 0
+        self.hit_pos = [0, 0]
+        
+        self.combo = 0
                
     def draw(self, canvas):
         canvas.draw_image(self.image, self.image_center, self.image_size, self.pos, self.image_size, self.angle)
     
     def update(self):
-        global score, accu, level, Rocks, persist, slow, state, hi, hi_acc, nebula_image, pew, doubles, shielded
+        global Rocks, persist, slow, nebula_image, doubles, shielded, dead_missile
+        global score, level, accu, state, hi, hi_acc, combo, pew
         
         # recalculate distance to ship
         self.dist = dist(self.pos, my_ship.pos_2)
@@ -396,15 +380,22 @@ class Sprite:
             # compare rock to every projectile currently in game
             for n in Missiles.items:    
                 if n.exploded > persist:
-                        Missiles.items.remove(n) # remove projectile after explosion animation completes
+                        Missiles.items.remove(n)
+                        dead_missile.items.remove(n)# remove projectile after explosion animation completes
                 else:
                     
                     # compare rock distance to missile n
                     self.miss_dist = dist(self.pos, n.pos)
 
                     if self.miss_dist < self.radius: # it's a hit!
-                        Rocks.items.remove(self) 
+                        Rocks.items.remove(self)
                         score += 1
+                        n.combo += 1
+                        if n.exploded == 0:
+                            n.hit_pos[0] = n.pos[0]
+                            n.hit_pos[1] = n.pos[1]
+                            dead_missile.add(n) # record location of hit
+                            
                         if pew >= 4:
                             explosion_sound = explosion_charged
                         else:
@@ -413,7 +404,7 @@ class Sprite:
                         explosion_sound.play()
                        
                         # missile reaches stage 1 of exploding
-                        n.exploded = 1
+                        n.exploded = 1 # resets the explosion if it hits additional rocks
                         n.image = random.choice([explosion_image, explosion_blue, explosion_orange])
                         n.image_center = [64, explosion_info.get_center()[1]]
                         n.image_size = explosion_info.get_size()
@@ -426,65 +417,7 @@ class Sprite:
                         break # cease iterating through missiles for this rock that was just destroyed
                         
             if len(Rocks) == 0: # no rocks left on screen
-                level += 1
-
-                if v2 == True: # if powerups are enabled
-                    if doubles == 1:
-                        doubles = 2
-                    elif doubles == 2:
-                        doubles = 0
-
-                    if shielded == 1:
-                        shielded = 2
-                    elif shielded == 2:
-                        shield_down_sound.rewind()
-                        shield_down_sound.play()
-                        shielded = 0
-                    SpawnPowerup(level) # chance to spawn powerup
-
-                    if level % 8 == 0: # shot power increase every 8 levels
-                        if pew < 4:
-                            pew += 1
-                            slow = speed[pew]
-                            pew_up_sound.rewind()
-                            pew_up_sound.play()
-                
-                if graphics:
-                    nebula_image = order[(level - 1) % 24 / 4]
-
-                for z in range(0, level / 2): # number of rocks in next level
-                                
-                        # spawn all rocks a set distance offscreen in random location
-                    y = random.randint(-40, HEIGHT + 41)
-                    x = random.randint(-40, WIDTH + 41)
-                    loc = [1000, 1000]
-
-                    valid = False
-                    while not valid: # prevents asteroids from spawning too close to ship
-                        pos = random.choice([[-40, y], [WIDTH + 40, y], [x, -40], [x, HEIGHT + 40]])
-                        if dist(my_ship.pos_2, pos) > 200:
-                            loc = pos
-                            valid = True
-
-                    vel = [0, 0] # initialize velocity list
-                        # Spin
-                    angle_vel = random.randint(-10, 10) * .01
-
-                           # set horizontal direction towards middle of screen
-                    if loc[0] < WIDTH / 2:
-                        vel[0] = random.randint(5, 15) * 0.1
-                    else:
-                        vel[0] = random.randint(5, 15) * -0.1
-
-                                # set vertical direction towards middle of screen
-                    if loc[1] < HEIGHT / 2:
-                        vel[1] = random.randint(5, 15) * 0.1
-                    else:
-                        vel[1] = random.randint(5, 15) * -0.1
-                                
-                                # create rock and add to list    
-                    a_rock = Sprite(asteroid_image, asteroid_info, None, loc, vel, 0, angle_vel)
-                    Rocks.add(a_rock)
+                level_up()
                         
             # determine if rock has left screen
             out_of_bounds = self.pos[0] > WIDTH + 100 or self.pos[0] < -100 or self.pos[1] > HEIGHT + 100 or self.pos[1] < -100
@@ -607,7 +540,7 @@ class Power:
                         x.vel[1] *= 0.1
                         x.angle_vel = 0
 
-                elif self.color == "green":
+                elif self.color == "lime":
                     if pew < 4:
                         pew += 1
                         slow = speed[pew]
@@ -630,7 +563,74 @@ class Power:
             
     def draw(self, canvas):
         canvas.draw_circle(self.pos, self.radius, 3, "White", self.color)
-            
+
+def level_up():
+    global level, doubles, shielded, pew, slow
+    global nebula_image, Rocks
+
+    level += 1
+
+    if v2 == True: # if powerups are enabled
+        if doubles == 1:
+            doubles = 2
+        elif doubles == 2:
+            doubles = 0
+
+        if shielded == 1:
+            shielded = 2
+        elif shielded == 2:
+            shield_down_sound.rewind()
+            shield_down_sound.play()
+            shielded = 0
+        SpawnPowerup(level) # chance to spawn powerup
+
+        if level % 8 == 0: # shot power increase every 10 levels
+            if pew < 4:
+                pew += 1
+                slow = speed[pew]
+                pew_up_sound.rewind()
+                pew_up_sound.play()
+
+    if graphics:
+        nebula_image = order[(level - 1) % 24 / 4]
+
+    for z in range(0, level / 2): # number of rocks in next level
+        spawn_rock()
+
+def spawn_rock():
+    global Rocks
+        # spawn all rocks a set distance offscreen in random location
+    y = random.randint(-40, HEIGHT + 41)
+    x = random.randint(-40, WIDTH + 41)
+    loc = [1000, 1000]
+
+    valid = False
+    while not valid: # prevents asteroids from spawning too close to ship
+        pos = random.choice([[-40, y], [WIDTH + 40, y], [x, -40], [x, HEIGHT + 40]])
+        if dist(my_ship.pos_2, pos) > 200:
+            loc = pos
+            valid = True
+
+    vel = [0, 0] # initialize velocity list
+        # Spin
+    angle_vel = random.randint(-10, 10) * .01
+
+           # set horizontal direction towards middle of screen
+    if loc[0] < WIDTH / 2:
+        vel[0] = random.randint(5, 15) * 0.1
+    else:
+        vel[0] = random.randint(5, 15) * -0.1
+
+                # set vertical direction towards middle of screen
+    if loc[1] < HEIGHT / 2:
+        vel[1] = random.randint(5, 15) * 0.1
+    else:
+        vel[1] = random.randint(5, 15) * -0.1
+                
+                # create rock and add to list    
+    a_rock = Sprite(asteroid_image, asteroid_info, None, loc, vel, 0, angle_vel)
+    Rocks.add(a_rock)
+
 def SpawnPowerup(o_level):
     # random chance to regenerate each level
     # gameplay bonus lasts for rest of round and next level
@@ -640,8 +640,8 @@ def SpawnPowerup(o_level):
     
     chance = random.choice(range(0, 10))
     if chance <= 4:
-        color = random.choice(["red","green","cyan","yellow","blue"])
-        if pew >= 4 and color == "green":
+        color = random.choice(["red","lime","cyan","yellow","blue"])
+        if pew >= 4 and color == "lime":
             color = "cyan"
         powerup = Power(color)
 
@@ -757,6 +757,9 @@ def OnClick(pos):
                     v2 = True
                 else:
                     v2 = False
+def center_text(frame, canvas, text, y, point, color = "white", face = "sans-serif"):
+    pixels = frame.get_canvas_textwidth(text, point, face)
+    canvas.draw_text(text, [WIDTH / 2 - pixels / 2, y], point, color, face)
 
 # create draw handler
 def draw(canvas): 
@@ -785,7 +788,14 @@ def draw(canvas):
     # draw ship and sprites
         Rocks.draw(canvas) # custom draw method will iterate through list of asteroids
         Missiles.draw(canvas) # same for projectiles
-        if not powerup == None:
+        
+        combo_colors = ["silver", "teal", "lime", "cyan", "fuchsia", "red", "orange", "yellow"]
+        if dead_missile:
+            for item in dead_missile.items:
+                combo_text = "+" + str(item.combo)
+                canvas.draw_text(combo_text, item.hit_pos, item.combo * 15, combo_colors[item.combo % 8], "sans-serif") 
+            
+        if powerup:
             powerup.draw(canvas)
             powerup.update()
         
@@ -796,12 +806,13 @@ def draw(canvas):
             my_ship.update()
             
         else:
-            canvas.draw_text("PAUSED", [HEIGHT / 2 - 105, 200], 100, "White", "sans-serif")
+            center_text(frame, canvas, "PAUSED", 200, 100, "White", "sans-serif")
         
         # HUD updates
         canvas.draw_text("level " + str(level), [50, 80], 40, "White", "sans-serif")
         canvas.draw_text(str(int(score)), [50, HEIGHT - 90], 40, "White", "sans-serif")
         canvas.draw_text(str(accu) + "%", [50, HEIGHT - 50], 40, "White", "sans-serif")
+        
 
         if v2: # powerups enabled
             canvas.draw_text(str(bombs), [WIDTH - 75, 80], 40, "Red", "sans-serif")
@@ -809,12 +820,12 @@ def draw(canvas):
             if doubles > 0:
                 pew_color = "cyan"
             else:
-                pew_color = "green"
+                pew_color = "lime"
             canvas.draw_text(str(pew), [WIDTH - 115, HEIGHT - 50], 40, pew_color, "sans-serif")
 
         for x in range(0, heat):
             if x < 2:
-                color = "green"
+                color = "lime"
             elif x < 4:
                 color = "yellow"
             elif x < 6:
@@ -829,14 +840,16 @@ def draw(canvas):
             canvas.draw_polygon([LL, UL, UR, LR], 1, color, color)
         
         if state == 2: # Game Over state
-            canvas.draw_text(msg, [HEIGHT / 2 - 200, 300], 100, "White", "sans-serif")
-        
+            center_text(frame, canvas, msg, 300, 100)
+            
     elif state == 0: # Main Menu
-        canvas.draw_text("2", [WIDTH / 2 - 35, 155], 150, "cyan")
+    
+        center_text(frame, canvas, "2", 155, 150, "cyan", "serif")
+        center_text(frame, canvas, title, 125, 50)
+        center_text(frame, canvas, instructs, 215, 30)
+        center_text(frame, canvas, "Hit SPACE to begin!", 400, 30)
+        
         canvas.draw_text("best: " + str(int(hi)) + " @ " + str(hi_acc) + "%", [50, HEIGHT - 50], 25, "White", "sans-serif")
-        canvas.draw_text(title, [WIDTH / 2 - 235, 125], 50, "White", "sans-serif")
-        canvas.draw_text(instructs, [WIDTH / 2 - 130, 215], 30, "White", "sans-serif")
-        canvas.draw_text("Hit SPACE to begin!", [WIDTH / 2 - 135, 400], 30, "White", "sans-serif")
 
         canvas.draw_text("fire    SPACE", [edge1, top_edge], 20, "White", "monospace")
         canvas.draw_text("bomb    B", [edge1, top(s1)], 20, "White", "monospace")
@@ -866,7 +879,7 @@ def draw(canvas):
 
             canvas.draw_circle([edge2, top_edge - 7], 13, 3, "White", "red")
             canvas.draw_text("+bomb", [edge2 + tab, top_edge], 20, "White", "monospace")
-            canvas.draw_circle([edge2, top(s2) - 7], 13, 3, "White", "green")
+            canvas.draw_circle([edge2, top(s2) - 7], 13, 3, "White", "lime")
             canvas.draw_text("+power", [edge2 + tab, top(s2)], 20, "White", "monospace")
             canvas.draw_circle([edge2, top(s2, 2) - 7], 13, 3, "White", "cyan")
             canvas.draw_text("double", [edge2 + tab, top(s2, 2)], 20, "White", "monospace")
@@ -881,14 +894,16 @@ def draw(canvas):
         
        
 def reset():
-    global my_ship, Missiles, Rocks, debris_image, nebula_image, state, a_missile_sound, b_missile_sound, missile_image
-    global bombs, level, shots, accu, score, pew, slow, heat, doubles, shielded, powerup
+    global my_ship, Missiles, Rocks, debris_image, nebula_image, state, a_missile_sound, b_missile_sound, missile_image, dead_missile
+    global bombs, level, shots, accu, score, pew, slow, heat, doubles, shielded, powerup, time
     
     explosion_ship.pause()
+    explosion_ship.rewind()
+
     state = 0
+    soundtrack.play()
         
-    debs = random.choice([a, b, c, d, e, f, g]) # switch debris background
-    debris_image = simplegui.load_image(debs)
+    debris_image = random.choice([a, b, c, d, e, f, g])
     
     # nebs = random.choice([ylw, prp, blk, red, grn, blu]) # switch background image
     nebula_image = grn
@@ -897,52 +912,31 @@ def reset():
     level = 1
     shots = 0
     accu = 0
+    time = 0
     heat = 0
-    
-    powerup = None
-
+    pew = 1
+    slow = speed[pew]
+    combo = 0
+    bombs = 0
     doubles = 0
     shielded = 0
+
+    powerup = None
     
-    pew = 1
     a_missile_sound = a_miss_sound
     b_missile_sound = b_miss_sound
     missile_image = shot_image
-
-    slow = speed[pew]
-    
-    bombs = 0
     
     # reset ship
     my_ship = Ship([WIDTH / 2 + 45, HEIGHT / 2 + 45], [0, 0], 0, ship_image, ship_info)
     my_ship.thrust = False
     
     Missiles = Multiples(30) # limit to prevent slowdowns
+    dead_missile = Multiples(30) # missiles that manage to hit recorded here
     Rocks = Multiples() # will be limited by player ability
     
     # spawn first rock
-    y = random.randrange(-45, 646)
-    x = random.randrange(-45, 846)
-    loc = random.choice([[-45, y], [WIDTH + 45, y], [x, -45], [x, HEIGHT + 45]])
-    vel = [0, 0]
-
-    # spin
-    angle_vel = random.randint(-10, 10) * .01
-
-    # Horizontal direction
-    if loc[0] < WIDTH / 2:
-        vel[0] = random.randint(5, 15) * 0.1
-    else:
-        vel[0] = random.randint(5, 15) * -0.1
-
-    # Vertical Direction
-    if loc[1] < HEIGHT / 2:
-        vel[1] = random.randint(5, 15) * 0.1
-    else:
-        vel[1] = random.randint(5, 15) * -0.1
-
-    a_rock = Sprite(asteroid_image, asteroid_info, None, loc, vel, 0, angle_vel)
-    Rocks.add(a_rock)
+    spawn_rock()
     
 # initialize frame
 frame = simplegui.create_frame("Asteroid Attack", WIDTH, HEIGHT)
