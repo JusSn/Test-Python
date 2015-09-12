@@ -5,7 +5,7 @@
 #|   \ |___  |   |  _|_/       |   | |___   
 
 # INSTRUCTIONS:
-# Codeskulptor framework and code available at http://www.codeskulptor.org/#user40_8uDOrCjMy8_6.py
+# Codeskulptor framework and code available at http://www.codeskulptor.org/#user40_ShaCLIoLEIlbIng_7.py
 # (0. Google Chrome is recommended)
 # 1. Allow pop-ups
 # 2. Click the play button in top left corner 
@@ -13,15 +13,14 @@
 # 4. Controls explained on left-hand side of window. 
 # 5. Enjoy!
 # 6. If sound effects (explosion, thrust, and missile) do not work, please alert me!
-#       Also see line 46 of code.
 # 7. To turn off music after closing popup, hit the back-arrow on top left of CodeSkulptor.
-
+ 
 # DISCLAIMERS
 # Justin Fan
-# Asteroid Attack 2 v2.2.5
+# Asteroid Attack 2 v2.2.7 (Add'tl code refactor, UI and resolution adjust, numbers tweaked)
 
 # extension of Rice University Python course's RiceRocks concept
-# original template by Scott Rixner et. al. of Rice University 
+# original template by Scott Rixner et. al. of Rice University  
 #   (their code is marked with --PROVIDED CODE--)
 
 # Asteroid/environment particle art assets created by Kim Lathrop 
@@ -33,29 +32,6 @@
 import simplegui
 import math
 import random
-
-# sound effect mp3s from starfox-online.net do not work unless cached in browser first for some reason.
-# swapping commented sound objects may or may not fix it depending on the machine.
-# URLs do not change either. Possibly something to do with the way these files are hosted on this specific website.
-
-# slow_sound = simplegui.load_sound("http://f.starfox-online.net/sf64/sfx/arwingHyperLaserOneShot.mp3")
-# ship_thrust_sound = simplegui.load_sound("http://f.starfox-online.net/sf64/sfx/flyToNextMission.mp3")
-# explosion_sound = simplegui.load_sound("http://f.starfox-online.net/sf64/sfx/arwingHitGround.mp3")
-# nobombs_sound = simplegui.load_sound("http://f.starfox-online.net/sf64/sfx/noDamageHit.mp3")
-# brake_sound = simplegui.load_sound("http://f.starfox-online.net/sf64/sfx/brake.mp3")
-# pause_sound = simplegui.load_sound("http://f.starfox-online.net/sf64/sfx/pause.mp3")
-# unpause_sound = simplegui.load_sound("http://f.starfox-online.net/sf64/sfx/vsDeselect.mp3")
-# freeze_sound = simplegui.load_sound("http://f.starfox-online.net/sf64/sfx/vsMenuMove.mp3")
-# bomb_pick_sound = simplegui.load_sound("http://f.starfox-online.net/sf64/sfx/bombPickup.mp3")
-# pew_up_sound = simplegui.load_sound("http://f.starfox-online.net/sf64/sfx/laserPickup.mp3")
-# double_pick_sound = simplegui.load_sound("http://f.starfox-online.net/sf64/sfx/openTargeting.mp3")
-# missile_sound = slow_sound
-# charged_sound = simplegui.load_sound("http://f.starfox-online.net/sf64/sfx/arwingPulseLaser.mp3")
-# charged_sound.set_volume(0.5)
-# heat_sound = simplegui.load_sound("http://f.starfox-online.net/sf64/sfx/landmasterSingleShot.mp3")
-# shield_up_sound = simplegui.load_sound("http://f.starfox-online.net/sf64/sfx/radioTransmissionStart.mp3")
-# shield_down_sound = simplegui.load_sound("http://f.starfox-online.net/sf64/sfx/radioTransmissionEnd.mp3")
-# -----------------------
 
 explosion_1 = simplegui.load_sound("http://vocaroo.com/media_command.php?media=s0zERqNdlH21&command=download_mp3")
 explosion_2 = simplegui.load_sound("http://vocaroo.com/media_command.php?media=s1CVUs7LBvQw&command=download_mp3")
@@ -89,29 +65,28 @@ shield_up_sound = simplegui.load_sound("http://vocaroo.com/media_command.php?med
 shield_down_sound = simplegui.load_sound("http://vocaroo.com/media_command.php?media=s0YYcW2MNZKj&command=download_mp3")
 
 # globals for user interface
-WIDTH = 800
-HEIGHT = 600
+WIDTH = 1000
+HEIGHT = 800
 edge1 = 50
 edge2 = WIDTH - 170
 s1 = 30
 s2 = 40
 tab = 45
-top_edge = 215
+top_edge = HEIGHT / 2 - 75
 
+#globals to alter general game behavior/difficulty
+miss_vel = 15
+rock_speed = 10
 speed = {1:25, 2:6, 3:2.5, 4:1.3333}
 combo_colors = ["silver", "teal", "lime", "cyan", "fuchsia", "red", "orange", "yellow"]
-acc = 0.08 # rotation acceleration
+acc = 0.08 # rotation acceleration modifier of ship
 
 hi = 0
 hi_acc = 0
 
 music = True
-graphics = False # turn off background and animation for better performance?
+graphics = True # turn off background and animation for better performance?
 v2 = True # denotes version 2 of the game with powerups
-
-left = False
-right = False
-forw = True
 
 collide = 20
 persist = 36 # frames * 2 to show of missile explosion (affects when it is removed after detonating) 
@@ -228,6 +203,10 @@ class Ship:
         self.side = True                        # determines which gun (left/right) to fire next shot from
         self.exploded = 0                       # current stage of explodiness
         
+        self.left = False
+        self.right = False
+        self.forw = True
+        
     def draw(self,canvas):
         canvas.draw_image(self.image, self.image_center, self.image_size, self.pos_2, self.image_size, self.angle)
 
@@ -260,7 +239,7 @@ class Ship:
                 self.image_center[0] = 135
                 ship_thrust_sound.play()
 
-                if forw:
+                if self.forw:
                     self.vel[0] += 0.2 * math.cos(self.angle)
                     self.vel[1] += 0.2 * math.sin(self.angle)
                 else:
@@ -316,8 +295,8 @@ class Ship:
                     missile_pos[0] = self.pos_2[0] + 20 * math.cos(self.angle) + 10 * math.cos(self.angle - math.pi / 2)
                     missile_pos[1] = self.pos_2[1] + 20 * math.sin(self.angle) + 10 * math.sin(self.angle - math.pi / 2)
 
-                    missile_vel[0] = (12 + pew * 3) * math.cos(self.angle)  # need separate velocity list for each missile
-                    missile_vel[1] = (12 + pew * 3) * math.sin(self.angle)  # even if identical because if not, 
+                    missile_vel[0] = (miss_vel + pew * 3) * math.cos(self.angle)  # need separate velocity list for each missile
+                    missile_vel[1] = (miss_vel + pew * 3) * math.sin(self.angle)  # even if identical because if not, 
                                                                             # affecting one will affect all (single list passed by ref)
                     a_missile = Sprite(missile_image, missile_info, a_missile_sound, missile_pos, missile_vel, self.angle, 0)
                     Missiles.add(a_missile)
@@ -330,8 +309,8 @@ class Ship:
                     b_missile_pos[0] = self.pos_2[0] + 20 * math.cos(self.angle) + 10 * math.cos(self.angle + math.pi / 2)
                     b_missile_pos[1] = self.pos_2[1] + 20 * math.sin(self.angle) + 10 * math.sin(self.angle + math.pi / 2)
 
-                    b_missile_vel[0] = (12 + pew * 3) * math.cos(self.angle)
-                    b_missile_vel[1] = (12 + pew * 3) * math.sin(self.angle)
+                    b_missile_vel[0] = (miss_vel + pew * 3) * math.cos(self.angle)
+                    b_missile_vel[1] = (miss_vel + pew * 3) * math.sin(self.angle)
 
                     b_missile = Sprite(missile_image, missile_info, b_missile_sound, b_missile_pos, b_missile_vel, self.angle, 0)
                     Missiles.add(b_missile)
@@ -623,14 +602,14 @@ def spawn_rock():
     angle_vel = random.randint(-10, 10) * .01
            
     if loc[0] < WIDTH / 2: # set horizontal direction towards middle of screen
-        vel[0] = random.randint(5, 15) * 0.1
+        vel[0] = random.randint(5, rock_speed) * 0.1
     else:
-        vel[0] = random.randint(5, 15) * -0.1
+        vel[0] = random.randint(5, rock_speed) * -0.1
                 
     if loc[1] < HEIGHT / 2: # set vertical direction towards middle of screen
-        vel[1] = random.randint(5, 15) * 0.1
+        vel[1] = random.randint(5, rock_speed) * 0.1
     else:
-        vel[1] = random.randint(5, 15) * -0.1
+        vel[1] = random.randint(5, rock_speed) * -0.1
                  
     a_rock = Sprite(asteroid_image, asteroid_info, None, loc, vel, 0, angle_vel) # create rock and add to list    
     Rocks.add(a_rock)
@@ -671,27 +650,23 @@ def Bomb():
     
 # create keypress handler
 def KeyDown(key):
-    global left, right  # keeps track of keys to process conflicting presses. 
-                        # can change direction without releasing key #1
-                        # and continue in previous direction if key #1 is still pressed
-                        # when key #2 is released
-    global music, state, forw, bombs
+    global music, state, bombs
     
     if key == simplegui.KEY_MAP["left"]:
         my_ship.angle_vel = -acc
-        left = True
+        my_ship.left = True
         
     elif key == simplegui.KEY_MAP["right"]:
         my_ship.angle_vel = acc
-        right = True
+        my_ship.right = True
         
     elif key == simplegui.KEY_MAP["up"]:
         my_ship.thrust = True
-        forw = True
+        my_ship.forw = True
 
     elif key == simplegui.KEY_MAP["down"]:
         my_ship.thrust = True
-        forw = False
+        my_ship.forw = False
         
     elif key == simplegui.KEY_MAP["space"]:
 
@@ -740,17 +715,17 @@ def KeyUp(key):
     global left, right
     
     if key == simplegui.KEY_MAP["left"]:
-        left = False
+        my_ship.left = False
 
-        if right == False:
+        if my_ship.right == False:
             my_ship.angle_vel = 0
         else:
             my_ship.angle_vel = acc
     
     elif key == simplegui.KEY_MAP["right"]:
-        right = False
+        my_ship.right = False
 
-        if left == False:
+        if my_ship.left == False:
             my_ship.angle_vel = 0
         else:
             my_ship.angle_vel = -acc
@@ -786,7 +761,6 @@ def center_text(frame, canvas, text, y, point, color = "white", face = "sans-ser
 # create draw handler
 def draw(canvas): 
     global time, heat
-    soundtrack.play()
     # animate background
     time -= 1
 
@@ -861,12 +835,14 @@ def draw(canvas):
         if state == 2: # Game Over state
             soundtrack.pause() 
             center_text(frame, canvas, msg, 300, 100)
+        else:
+            soundtrack.play()
             
     elif state == 0: # Main Menu
         center_text(frame, canvas, "2", 155, 150, "cyan", "serif")
         center_text(frame, canvas, title, 125, 50)
         center_text(frame, canvas, instructs, 215, 30)
-        center_text(frame, canvas, "Hit SPACE to begin!", 400, 30)
+        center_text(frame, canvas, "Hit SPACE to begin!", HEIGHT - 200, 30)
         
         canvas.draw_text("best: " + str(int(hi)) + " @ " + str(hi_acc) + "%", [50, HEIGHT - 50], 25, "White", "sans-serif")
 
